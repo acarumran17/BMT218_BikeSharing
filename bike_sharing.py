@@ -294,7 +294,7 @@ X = saatlik_veri.drop(columns=["cnt", "casual", "registered", "dteday"], errors=
 X = X.select_dtypes(include=[np.number])  # sayısal sütunlar
 y = saatlik_veri["cnt"]
 
-# 2. Normalize et ve tekrar DataFrame'e çevir (sütun isimlerini kaybetme)
+# 2. Normalize et ve tekrar DataFrame'e çevir
 scaler = MinMaxScaler()
 X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
 
@@ -303,14 +303,13 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, 
 
 # 4. Yapay sinir ağı modeli tanımla
 mlp_model = MLPRegressor(hidden_layer_sizes=(64, 32),
-                     activation='relu',
-                     solver='adam',               # daha kararlı optimizer
-                     learning_rate_init=0.001,    # daha düşük öğrenme oranı
-                     max_iter=500,                # daha fazla epoch (öğrenme süresi)
-                     batch_size=32,
-                     random_state=42,
-                     verbose=False)
-
+                         activation='relu',
+                         solver='adam',
+                         learning_rate_init=0.001,
+                         max_iter=500,
+                         batch_size=32,
+                         random_state=42,
+                         verbose=False)
 
 # 5. Eğit
 mlp_model.fit(X_train, y_train)
@@ -322,12 +321,11 @@ r2 = r2_score(y_test, y_pred)
 
 print("\n--- Yapay Sinir Ağı Performansı ---")
 print(f"Ortalama Kare Hata (MSE): {mse:.2f}")
-print(f"R2 Skoru: {r2:.2f}")  # R2 skoru: modele güven derecesi
+print(f"R2 Skoru: {r2:.2f}")
 
-# 7. Öğrenme eğrisi (kayıp değeri üzerinden)
+# 7. Öğrenme eğrisi
 loss_curve = mlp_model.loss_curve_
-
-plt.figure(figsize=(10,5))
+plt.figure(figsize=(10, 5))
 plt.plot(loss_curve, color='blue', label='Eğitim Kaybı')
 plt.xlabel("Epoch")
 plt.ylabel("Kayıp (Loss)")
@@ -336,6 +334,19 @@ plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+# 8. Tahmin vs Gerçek Değer Grafiği
+plt.figure(figsize=(10, 5))
+plt.plot(y_test.values[:100], label="Gerçek", color="green", marker='o')
+plt.plot(y_pred[:100], label="Tahmin", color="red", linestyle='dashed', marker='x')
+plt.title("Yapay Sinir Ağı: Gerçek vs Tahmin Edilen Kiralama Sayısı (İlk 100 Gözlem)")
+plt.xlabel("Gözlem Sırası")
+plt.ylabel("Kiralama Sayısı")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
 
 #--------------------------RandomForestRegressor ile Değişken Önemi --------------------------------------
 from sklearn.ensemble import RandomForestRegressor
