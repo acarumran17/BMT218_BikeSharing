@@ -287,55 +287,55 @@ for isim, model in modeller.items():
 
 #----------------------------Yapay Sinir Ağı Modeli (MLPRegressor)--------------------------------
 from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 
-# 'datetime' gibi string sütunlar varsa kaldırılmalı, X sadece sayısal olmalı
-X = saatlik_veri.drop(columns=["cnt", "casual", "registered", "dteday"], errors='ignore')  # dteday çıkarıldı
-X = X.select_dtypes(include=[np.number])  # yalnızca sayısal veriler kalsın
+# 1. Girdi ve hedef değişken
+X = saatlik_veri.drop(columns=["cnt", "casual", "registered", "dteday"], errors='ignore')
+X = X.select_dtypes(include=[np.number])  # sayısal sütunlar
 y = saatlik_veri["cnt"]
 
-# Eğitim (%80) ve test (%20) kümeleri
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) 
+# 2. Normalize et ve tekrar DataFrame'e çevir (sütun isimlerini kaybetme)
+scaler = MinMaxScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
 
-# Standart ölçekleme (sadece sayısal sütunlar olduğu için güvenli)
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+# 3. Eğitim ve test verisine ayır
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-# Yapay sinir ağı modeli
-mlp = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=1000, random_state=42)
-mlp.fit(X_train_scaled, y_train)
-y_pred_mlp = mlp.predict(X_test_scaled)
+# 4. Yapay sinir ağı modeli tanımla
+mlp_model = MLPRegressor(hidden_layer_sizes=(64, 32),
+                     activation='relu',
+                     solver='adam',               # daha kararlı optimizer
+                     learning_rate_init=0.001,    # daha düşük öğrenme oranı
+                     max_iter=500,                # daha fazla epoch (öğrenme süresi)
+                     batch_size=32,
+                     random_state=42,
+                     verbose=False)
 
-# Performans değerlendirme
-print("Yapay Sinir Ağı (MLPRegressor)")
-print("MSE:", mean_squared_error(y_test, y_pred_mlp))
-print("R2 Skoru:", r2_score(y_test, y_pred_mlp))
-print()
 
-# 1. Gerçek vs Tahmin Edilen Değerler
-plt.figure(figsize=(10, 5))
-plt.scatter(y_test, y_pred_mlp, alpha=0.5, color='blue')
-plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
-plt.xlabel("Gerçek Değerler")
-plt.ylabel("Tahmin Edilen Değerler")
-plt.title("Gerçek vs. Tahmin Edilen Kiralama Sayısı (MLPRegressor)")
+# 5. Eğit
+mlp_model.fit(X_train, y_train)
+
+# 6. Tahmin ve performans
+y_pred = mlp_model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("\n--- Yapay Sinir Ağı Performansı ---")
+print(f"Ortalama Kare Hata (MSE): {mse:.2f}")
+print(f"R2 Skoru: {r2:.2f}")  # R2 skoru: modele güven derecesi
+
+# 7. Öğrenme eğrisi (kayıp değeri üzerinden)
+loss_curve = mlp_model.loss_curve_
+
+plt.figure(figsize=(10,5))
+plt.plot(loss_curve, color='blue', label='Eğitim Kaybı')
+plt.xlabel("Epoch")
+plt.ylabel("Kayıp (Loss)")
+plt.title("Yapay Sinir Ağı Öğrenme Eğrisi")
 plt.grid(True)
+plt.legend()
 plt.tight_layout()
 plt.show()
-
-# 2. Öğrenme Eğrisi (Loss Curve)
-if hasattr(mlp, "loss_curve_"):
-    plt.figure(figsize=(8, 4))
-    plt.plot(mlp.loss_curve_, color='green')
-    plt.title("MLPRegressor Öğrenme Eğrisi")
-    plt.xlabel("İterasyon")
-    plt.ylabel("Kayıp (Loss)")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
 
 #--------------------------RandomForestRegressor ile Değişken Önemi --------------------------------------
 from sklearn.ensemble import RandomForestRegressor
