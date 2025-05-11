@@ -339,22 +339,23 @@ if hasattr(mlp, "loss_curve_"):
 
 #--------------------------RandomForestRegressor ile Değişken Önemi --------------------------------------
 from sklearn.ensemble import RandomForestRegressor
+import pandas as pd
+import matplotlib.pyplot as plt
 
-# Aynı X ve y kullanılır (cnt hedef değişkeni)
+# Yeni X: sadece anlamlı değişkenleri içeren
+# Örneğin: saat, tatil günü, çalışma günü, hava durumu, sıcaklık, hissedilen sıcaklık, nem, rüzgar hızı
+X_filtered = X_train[['hr', 'holiday', 'workingday', 'weathersit', 'temp', 'atemp', 'hum', 'windspeed']]
 rf = RandomForestRegressor(random_state=42)
-rf.fit(X_train, y_train)
+rf.fit(X_filtered, y_train)
 
 # Değişken önem dereceleri
 importances = rf.feature_importances_
-feature_names = X.columns
+feature_names = X_filtered.columns
+
 # Türkçeleştirme sözlüğü
 degisken_adlari = {
-    'season': 'Mevsim',
-    'yr': 'Yıl',
-    'mnth': 'Ay',
     'hr': 'Saat',
     'holiday': 'Tatil Günü',
-    'weekday': 'Haftanın Günü',
     'workingday': 'Çalışma Günü',
     'weathersit': 'Hava Durumu',
     'temp': 'Sıcaklık',
@@ -362,6 +363,7 @@ degisken_adlari = {
     'hum': 'Nem',
     'windspeed': 'Rüzgar Hızı'
 }
+
 translated_names = [degisken_adlari.get(name, name) for name in feature_names]
 importance_df = pd.DataFrame({"Değişken": translated_names, "Önem Skoru": importances})
 importance_df = importance_df.sort_values("Önem Skoru", ascending=False)
@@ -377,3 +379,5 @@ plt.title("Değişkenlerin Bisiklet Kiralama Sayısına Etkisi")
 plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.show()
+
+
